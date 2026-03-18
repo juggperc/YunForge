@@ -20,29 +20,29 @@ export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
     z.boolean(),
     z.null(),
     z.array(JsonValueSchema),
-    z.record(z.string(), JsonValueSchema),
+    z.record(JsonValueSchema),
   ]),
 )
 
-export const JsonObjectSchema = z.record(z.string(), JsonValueSchema)
+export const JsonObjectSchema = z.record(JsonValueSchema)
 
 export const McpHttpTransportSchema = z.object({
   type: z.literal('http'),
   url: z.string().url(),
-  headers: z.record(z.string(), z.string()).default({}),
+  headers: z.record(z.string()).default({}),
 })
 
 export const McpSseTransportSchema = z.object({
   type: z.literal('sse'),
   url: z.string().url(),
-  headers: z.record(z.string(), z.string()).default({}),
+  headers: z.record(z.string()).default({}),
 })
 
 export const McpStdioTransportSchema = z.object({
   type: z.literal('stdio'),
   command: z.string().trim().min(1),
   args: z.array(z.string()).default([]),
-  env: z.record(z.string(), z.string()).default({}),
+  env: z.record(z.string()).default({}),
   cwd: z.string().trim().min(1).optional(),
 })
 
