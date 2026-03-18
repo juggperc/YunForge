@@ -164,6 +164,7 @@ export function TestConsole({
               Tool traces appear inline under assistant messages.
             </div>
             <Button
+              type="submit"
               disabled={
                 disabled ||
                 harness.status !== 'compiled' ||

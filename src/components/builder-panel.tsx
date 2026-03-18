@@ -120,7 +120,10 @@ export function BuilderPanel({
             <div className="text-xs text-muted-foreground">
               {error ? error.message : 'Harness status switches back to draft when the spec changes.'}
             </div>
-            <Button disabled={disabled || status === 'streaming' || !input.trim()}>
+            <Button
+              type="submit"
+              disabled={disabled || status === 'streaming' || !input.trim()}
+            >
               <Send className="size-4" />
               Send
             </Button>
