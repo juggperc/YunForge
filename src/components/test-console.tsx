@@ -17,16 +17,17 @@ export function TestConsole({
   messages: initialMessages,
   onMessagesChange,
   onCompile,
-  disabled,
+  disabledReason,
 }: {
   harness: Harness
   messages: UIMessage[]
   onMessagesChange: (messages: UIMessage[]) => void
   onCompile: () => Promise<void>
-  disabled: boolean
+  disabledReason: string | null
 }) {
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const disabled = Boolean(disabledReason)
   const toolNames = Object.fromEntries(
     harness.spec.tools.map((skill, index) => [
       skill.name
@@ -65,14 +66,14 @@ export function TestConsole({
           <div>
             <div className="flex items-center gap-2">
               <FlaskConical className="size-4 text-emerald-300" />
-              <h2 className="text-sm text-zinc-50">Live Test Console</h2>
+              <h2 className="font-heading text-lg text-zinc-50">Live Test Console</h2>
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
               Run the compiled assistant here and inspect inline tool traces
               without docking a permanent side panel.
             </div>
           </div>
-          <Badge variant="outline" className="border-border/60 uppercase">
+          <Badge variant="outline" className="border-border/60 capitalize">
             {harness.status}
           </Badge>
         </div>
@@ -81,9 +82,9 @@ export function TestConsole({
       <div className="flex items-center justify-between gap-3 border-b border-border/70 px-5 py-3">
         <div className="text-xs text-muted-foreground">
           {disabled
-            ? 'Add both API keys before testing.'
+            ? disabledReason
             : harness.status === 'compiled'
-              ? 'Compiled and ready.'
+              ? 'Compiled and ready. Built-in web search and configured MCP tools are available during the test run.'
               : 'Compile after builder changes to refresh the assistant.'}
         </div>
         <Button

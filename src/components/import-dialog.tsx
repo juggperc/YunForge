@@ -54,7 +54,7 @@ export function ImportDialog({
         </DialogHeader>
         <div className="space-y-4 p-4">
           <div className="rounded-xl border border-dashed border-border/70 bg-black/20 p-4">
-            <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Upload className="size-3.5" />
               Import From File
             </div>
@@ -83,7 +83,7 @@ export function ImportDialog({
             />
           </div>
           <div className="rounded-xl border border-border/70 bg-black/20 p-4">
-            <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Link2 className="size-3.5" />
               Import From Link
             </div>

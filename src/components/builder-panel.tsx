@@ -78,10 +78,10 @@ export function BuilderPanel({
             <div className="flex flex-1 items-center justify-center">
               <div className="w-full max-w-4xl space-y-6 text-center">
                 <div className="space-y-3">
-                  <div className="text-[11px] uppercase tracking-[0.3em] text-blue-300">
+                  <div className="text-sm text-blue-300">
                     Builder Chat
                   </div>
-                  <div className="text-3xl text-zinc-50">
+                  <div className="font-heading text-3xl text-zinc-50 md:text-4xl">
                     What assistant do you want to forge?
                   </div>
                   <div className="mx-auto max-w-2xl text-sm text-muted-foreground">

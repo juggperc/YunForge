@@ -10,6 +10,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Geist Pixel Square';
+  src: url('./assets/fonts/geist-pixel-square.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -62,6 +70,7 @@
   body {
     @apply h-full overflow-hidden font-sans text-[14px] antialiased bg-background text-foreground;
     color-scheme: dark;
+    font-weight: 400;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
@@ -106,7 +115,16 @@
   }
 
   .theme {
-    --font-sans: 'Geist Pixel Square', 'Geist Variable', sans-serif;
-    --font-mono: 'Geist Pixel Square', 'Geist Variable', monospace;
+    --font-sans: 'Geist Variable', sans-serif;
+    --font-heading: 'Geist Pixel Square', 'Geist Variable', sans-serif;
+    --font-mono: 'Geist Variable', monospace;
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: 0;
   }
 }

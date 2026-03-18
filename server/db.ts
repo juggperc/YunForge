@@ -4,6 +4,7 @@ import Database from 'better-sqlite3'
 
 import {
   createEmptyHarnessSpec,
+  DEFAULT_MCP_SERVERS_JSON,
   DEFAULT_MODEL,
   deriveHarnessName,
   HarnessSchema,
@@ -124,6 +125,7 @@ export function getSettings(): Settings {
     openrouterKey: mapped.openrouter_key ?? '',
     e2bKey: mapped.e2b_key ?? '',
     defaultModel: mapped.default_model ?? DEFAULT_MODEL,
+    mcpServersJson: mapped.mcp_servers_json ?? DEFAULT_MCP_SERVERS_JSON,
   })
 }
 

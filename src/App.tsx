@@ -75,7 +75,7 @@ function RailAction({
   return (
     <Button
       variant={active ? 'secondary' : 'ghost'}
-      className="h-auto w-full flex-col gap-2 rounded-2xl px-0 py-3 text-[10px] uppercase tracking-[0.18em]"
+      className="h-auto w-full flex-col gap-2 rounded-2xl px-0 py-3 text-[11px]"
       onClick={onClick}
     >
       <Icon className="size-4" />
@@ -133,7 +133,10 @@ function HarnessSpecPanel({
                           {skill.description || 'Generated skill'}
                         </div>
                       </div>
-                      <Badge variant="outline" className="border-border/70 bg-black/20">
+                      <Badge
+                        variant="outline"
+                        className="border-border/70 bg-black/20 capitalize"
+                      >
                         {harness.status === 'compiled' ? 'active' : 'draft'}
                       </Badge>
                     </div>
@@ -182,6 +185,11 @@ function AppShell() {
   const editingSkillValue =
     editingHarness?.spec.tools.find((skill) => skill.name === editingSkill?.skillName) ??
     null
+  const assistantDisabledReason = !settings.openrouterKey.trim()
+    ? 'Add your OpenRouter API key before testing.'
+    : selectedHarness?.spec.tools.length && !settings.e2bKey.trim()
+      ? 'This harness has generated JavaScript skills. Add your E2B API key before testing.'
+      : null
 
   async function refreshHarnesses(preferredId?: string | null) {
     const nextHarnesses = await fetchHarnesses()
@@ -359,7 +367,7 @@ function AppShell() {
         <aside className="flex h-full w-[92px] flex-col justify-between border-r border-border/70 bg-zinc-950/92 px-3 py-4">
           <div className="space-y-4">
             <div className="rounded-2xl border border-border/70 bg-card/60 px-3 py-4 text-center">
-              <div className="text-[10px] uppercase tracking-[0.28em] text-blue-300">
+              <div className="font-heading text-sm text-blue-300">
                 YF
               </div>
               <div className="mt-2 text-xs text-zinc-50">Forge</div>
@@ -391,13 +399,13 @@ function AppShell() {
           </div>
           <div className="space-y-3">
             <div className="rounded-2xl border border-border/70 bg-card/60 px-3 py-3">
-              <div className="text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+              <div className="text-[10px] text-muted-foreground">
                 Active
               </div>
               <div className="mt-2 truncate text-xs text-zinc-50">{selectedHarness.name}</div>
               <Badge
                 variant="outline"
-                className="mt-3 w-full justify-center border-border/70 bg-black/20 text-[10px] uppercase"
+                className="mt-3 w-full justify-center border-border/70 bg-black/20 capitalize"
               >
                 {selectedHarness.status}
               </Badge>
@@ -416,13 +424,15 @@ function AppShell() {
             <header className="border-b border-border/70 bg-background/92 px-6 py-5">
               <div className="mx-auto flex w-full max-w-6xl items-start justify-between gap-6">
                 <div className="min-w-0 space-y-3">
-                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-blue-300">
+                  <div className="flex items-center gap-2 text-sm text-blue-300">
                     <Sparkles className="size-3.5" />
                     Builder Workspace
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="truncate text-2xl text-zinc-50">{selectedHarness.name}</h1>
-                    <Badge variant="outline" className="border-border/70 uppercase">
+                    <h1 className="font-heading truncate text-2xl text-zinc-50 md:text-3xl">
+                      {selectedHarness.name}
+                    </h1>
+                    <Badge variant="outline" className="border-border/70 capitalize">
                       {selectedHarness.status}
                     </Badge>
                   </div>
@@ -456,7 +466,7 @@ function AppShell() {
                         )
                       })
                     }}
-                    disabled={!settings.openrouterKey.trim() || !settings.e2bKey.trim()}
+                    disabled={Boolean(assistantDisabledReason)}
                   >
                     <Play className="size-4" />
                     {selectedHarness.status === 'compiled'
@@ -550,7 +560,7 @@ function AppShell() {
               }))
             }
             onCompile={handleCompileHarness}
-            disabled={!settings.openrouterKey.trim() || !settings.e2bKey.trim()}
+            disabledReason={assistantDisabledReason}
           />
         </SheetContent>
       </Sheet>

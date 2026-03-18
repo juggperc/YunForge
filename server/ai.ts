@@ -1,10 +1,8 @@
 import {
   convertToModelMessages,
   generateObject,
-  jsonSchema,
   stepCountIs,
   streamText,
-  tool,
   type UIMessage,
 } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
@@ -16,12 +14,14 @@ import {
   HarnessSpecSchema,
   type Harness,
   type HarnessSpec,
-  type JsonObject,
   type Settings,
   type SkillSpec,
 } from '../shared/schema.ts'
 
-import { executeSkillInSandbox } from './e2b'
+import {
+  createRuntimeTools,
+  normalizeToolSchema,
+} from './runtime-tools'
 
 function sanitizeCode(code: string) {
   return code
@@ -30,19 +30,6 @@ function sanitizeCode(code: string) {
     .replace(/\s*```$/, '')
     .replace(/^export\s+default\s+/i, '')
     .trim()
-}
-
-function normalizeToolSchema(schema: JsonObject | undefined, fallbackName: string) {
-  const base = schema && Object.keys(schema).length > 0 ? schema : undefined
-
-  return (
-    base ?? {
-      type: 'object',
-      title: fallbackName,
-      properties: {},
-      additionalProperties: false,
-    }
-  )
 }
 
 function normalizeSkill(skill: SkillSpec) {
@@ -114,13 +101,18 @@ function getOpenRouter(settings: Settings) {
   })
 }
 
-function builderSystemPrompt(harness: Harness) {
+function builderSystemPrompt(harness: Harness, warnings: string[]) {
   return [
     'You are YunForge, a local harness builder for chat-first AI assistants.',
     'Your job is to guide the user toward a concrete, deployable assistant specification.',
     'Speak conversationally and explain what you are changing or what is still missing.',
     'Prefer short, practical answers. Ask at most one follow-up question when a blocker exists.',
     'When the user requests capabilities that need live data, APIs, or sandboxed computation, assume they want a generated skill.',
+    'Built-in runtime tools are available during the builder chat:',
+    '- `web_search`: searches the live web, fetches source pages, chunks them, and returns ranked excerpts.',
+    '- Configured MCP tools: user-supplied external tools from the local settings sheet.',
+    'Use runtime tools when you need current docs, live facts, or external system context.',
+    'Only generate a persisted skill when the finished assistant should keep that capability at runtime.',
     'Do not emit raw JSON unless the user explicitly asks for it.',
     '',
     `Current harness name: ${harness.name}`,
@@ -129,6 +121,9 @@ function builderSystemPrompt(harness: Harness) {
     `Current model: ${harness.spec.model || '(unset)'}`,
     `Current memory policy: ${harness.spec.memoryPolicy || '(unset)'}`,
     `Current tools: ${harness.spec.tools.map((tool) => tool.name).join(', ') || '(none)'}`,
+    warnings.length
+      ? `Runtime warnings: ${warnings.join(' | ')}`
+      : 'Runtime warnings: (none)',
   ].join('\n')
 }
 
@@ -138,6 +133,8 @@ function specCompilerSystemPrompt(currentSpec: HarnessSpec) {
     'Preserve existing information unless the conversation clearly replaces it.',
     'Fill missing fields with sensible defaults when the user intent is clear.',
     'The `tools` array must contain only active skills that materially help the harness goal.',
+    'Built-in runtime tools such as `web_search` and configured MCP tools are already available automatically at runtime.',
+    'Do not create a persisted skill just to perform one-off research or to mirror an MCP tool that is already configured.',
     'Each tool `code` field must be a complete async JavaScript function string.',
     'Use the signature `async function skillName(input, context) { ... }`.',
     'The function must be self-contained, must not import modules, and must return JSON-serializable output.',
@@ -150,7 +147,7 @@ function specCompilerSystemPrompt(currentSpec: HarnessSpec) {
   ].join('\n')
 }
 
-function assistantSystemPrompt(harness: Harness) {
+function assistantSystemPrompt(harness: Harness, warnings: string[]) {
   return [
     harness.spec.systemPrompt.trim(),
     '',
@@ -159,8 +156,14 @@ function assistantSystemPrompt(harness: Harness) {
     `Memory policy: ${harness.spec.memoryPolicy || DEFAULT_MEMORY_POLICY}`,
     'You are operating inside YunForge.',
     'Use tools when they materially improve accuracy or can complete the task faster.',
+    'A built-in `web_search` tool is available for current web information and returns chunked source excerpts with URLs.',
+    'Configured MCP tools may also be available from the user settings.',
+    'When using web search, cite the source URLs you relied on.',
     'When a tool fails, explain the failure plainly and continue if a useful answer is still possible.',
     'Do not fabricate tool results.',
+    warnings.length
+      ? `Runtime warnings: ${warnings.join(' | ')}`
+      : '',
   ]
     .filter(Boolean)
     .join('\n')
@@ -175,46 +178,50 @@ export async function createBuilderResponse(input: {
   const openrouter = getOpenRouter(input.settings)
   const modelId = input.harness.spec.model || input.settings.defaultModel || DEFAULT_MODEL
   const modelMessages = await convertToModelMessages(input.messages)
+  const runtimeTools = await createRuntimeTools({
+    harness: input.harness,
+    settings: input.settings,
+    includeGeneratedSkills: false,
+  })
 
   const result = streamText({
     model: openrouter(modelId),
-    system: builderSystemPrompt(input.harness),
+    system: builderSystemPrompt(input.harness, runtimeTools.warnings),
     messages: modelMessages,
+    tools: runtimeTools.tools,
+    stopWhen: stepCountIs(8),
   })
 
   return result.toUIMessageStreamResponse({
     originalMessages: input.messages,
     onFinish: async ({ messages }) => {
-      const compiled = await generateObject({
-        model: openrouter(modelId),
-        system: specCompilerSystemPrompt(input.harness.spec),
-        messages: await convertToModelMessages(messages),
-        schema: HarnessSpecSchema,
-        schemaName: 'HarnessSpec',
-        schemaDescription:
-          'The complete assistant harness spec including generated skills.',
-      })
+      try {
+        const compiled = await generateObject({
+          model: openrouter(modelId),
+          system: specCompilerSystemPrompt(input.harness.spec),
+          messages: await convertToModelMessages(messages),
+          schema: HarnessSpecSchema,
+          schemaName: 'HarnessSpec',
+          schemaDescription:
+            'The complete assistant harness spec including generated skills.',
+        })
 
-      const nextSpec = normalizeHarnessSpec(
-        compiled.object,
-        input.harness.spec,
-        input.settings.defaultModel,
-      )
-      const nextName = resolveHarnessName(input.harness.name, nextSpec)
-      await input.onSpecReady(nextSpec, nextName)
+        const nextSpec = normalizeHarnessSpec(
+          compiled.object,
+          input.harness.spec,
+          input.settings.defaultModel,
+        )
+        const nextName = resolveHarnessName(input.harness.name, nextSpec)
+        await input.onSpecReady(nextSpec, nextName)
+      } finally {
+        await runtimeTools.close()
+      }
     },
-    onError: (error) =>
-      error instanceof Error ? error.message : 'Builder request failed.',
+    onError: (error) => {
+      void runtimeTools.close()
+      return error instanceof Error ? error.message : 'Builder request failed.'
+    },
   })
-}
-
-function toToolKey(name: string, index: number) {
-  const normalized = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-
-  return normalized || `skill_${index + 1}`
 }
 
 export async function createAssistantResponse(input: {
@@ -223,56 +230,28 @@ export async function createAssistantResponse(input: {
   settings: Settings
 }) {
   const openrouter = getOpenRouter(input.settings)
-
-  if (!input.harness.spec.tools.length) {
-    const result = streamText({
-      model: openrouter(input.harness.spec.model || input.settings.defaultModel),
-      system: assistantSystemPrompt(input.harness),
-      messages: await convertToModelMessages(input.messages),
-    })
-
-    return result.toUIMessageStreamResponse({
-      originalMessages: input.messages,
-      onError: (error) =>
-        error instanceof Error ? error.message : 'Assistant request failed.',
-    })
-  }
-
-  const tools = Object.fromEntries(
-    input.harness.spec.tools.map((skill, index) => {
-      const key = toToolKey(skill.name, index)
-
-      return [
-        key,
-        tool({
-          description: skill.description || `Generated YunForge tool: ${skill.name}`,
-          inputSchema: jsonSchema(
-            normalizeToolSchema(skill.inputSchema, key) as Record<string, unknown>,
-          ),
-          execute: async (toolInput) => {
-            return executeSkillInSandbox({
-              skill,
-              input: toolInput,
-              harness: input.harness,
-              settings: input.settings,
-            })
-          },
-        }),
-      ]
-    }),
-  )
+  const runtimeTools = await createRuntimeTools({
+    harness: input.harness,
+    settings: input.settings,
+    includeGeneratedSkills: true,
+  })
 
   const result = streamText({
     model: openrouter(input.harness.spec.model || input.settings.defaultModel),
-    system: assistantSystemPrompt(input.harness),
+    system: assistantSystemPrompt(input.harness, runtimeTools.warnings),
     messages: await convertToModelMessages(input.messages),
-    tools,
+    tools: runtimeTools.tools,
     stopWhen: stepCountIs(6),
   })
 
   return result.toUIMessageStreamResponse({
     originalMessages: input.messages,
-    onError: (error) =>
-      error instanceof Error ? error.message : 'Assistant request failed.',
+    onFinish: async () => {
+      await runtimeTools.close()
+    },
+    onError: (error) => {
+      void runtimeTools.close()
+      return error instanceof Error ? error.message : 'Assistant request failed.'
+    },
   })
 }

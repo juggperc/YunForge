@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const DEFAULT_MODEL = 'deepseek/deepseek-chat'
 export const DEFAULT_MEMORY_POLICY =
   'Keep the conversation session-local. Persist only the harness configuration and generated skills.'
+export const DEFAULT_MCP_SERVERS_JSON = '[]'
 
 export type JsonValue =
   | string
@@ -24,6 +25,39 @@ export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
 )
 
 export const JsonObjectSchema = z.record(z.string(), JsonValueSchema)
+
+export const McpHttpTransportSchema = z.object({
+  type: z.literal('http'),
+  url: z.string().url(),
+  headers: z.record(z.string(), z.string()).default({}),
+})
+
+export const McpSseTransportSchema = z.object({
+  type: z.literal('sse'),
+  url: z.string().url(),
+  headers: z.record(z.string(), z.string()).default({}),
+})
+
+export const McpStdioTransportSchema = z.object({
+  type: z.literal('stdio'),
+  command: z.string().trim().min(1),
+  args: z.array(z.string()).default([]),
+  env: z.record(z.string(), z.string()).default({}),
+  cwd: z.string().trim().min(1).optional(),
+})
+
+export const McpTransportSchema = z.discriminatedUnion('type', [
+  McpHttpTransportSchema,
+  McpSseTransportSchema,
+  McpStdioTransportSchema,
+])
+
+export const McpServerConfigSchema = z.object({
+  name: z.string().trim().min(1),
+  transport: McpTransportSchema,
+})
+
+export const McpServerConfigListSchema = z.array(McpServerConfigSchema)
 
 export const SkillSpecSchema = z.object({
   name: z.string().trim().min(1),
@@ -69,12 +103,14 @@ export const SettingsSchema = z.object({
   openrouterKey: z.string().default(''),
   e2bKey: z.string().default(''),
   defaultModel: z.string().default(DEFAULT_MODEL),
+  mcpServersJson: z.string().default(DEFAULT_MCP_SERVERS_JSON),
 })
 
 export const SettingsKeySchema = z.enum([
   'openrouter_key',
   'e2b_key',
   'default_model',
+  'mcp_servers_json',
 ])
 
 export const ForgeExportSchema = z.object({
@@ -86,6 +122,7 @@ export const ForgeExportSchema = z.object({
 })
 
 export type JsonObject = z.infer<typeof JsonObjectSchema>
+export type McpServerConfig = z.infer<typeof McpServerConfigSchema>
 export type SkillSpec = z.infer<typeof SkillSpecSchema>
 export type HarnessSpec = z.infer<typeof HarnessSpecSchema>
 export type PortableHarnessSpec = z.infer<typeof PortableHarnessSpecSchema>
@@ -99,6 +136,20 @@ export function createEmptyHarnessSpec(model = DEFAULT_MODEL): HarnessSpec {
   return HarnessSpecSchema.parse({
     model,
   })
+}
+
+export function parseMcpServersJson(raw: string) {
+  const trimmed = raw.trim()
+
+  if (!trimmed) {
+    return McpServerConfigListSchema.parse([])
+  }
+
+  return McpServerConfigListSchema.parse(JSON.parse(trimmed))
+}
+
+export function formatMcpServersJson(raw: string) {
+  return JSON.stringify(parseMcpServersJson(raw), null, 2)
 }
 
 export function deriveHarnessName(goal: string, fallback = 'Untitled Harness') {

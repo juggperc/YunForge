@@ -22,6 +22,7 @@ const defaultSettings: Settings = {
   openrouterKey: '',
   e2bKey: '',
   defaultModel: DEFAULT_MODEL,
+  mcpServersJson: '[]',
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -57,6 +58,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         key === 'openrouter_key' ? value : current.openrouterKey,
       e2bKey: key === 'e2b_key' ? value : current.e2bKey,
       defaultModel: key === 'default_model' ? value : current.defaultModel,
+      mcpServersJson:
+        key === 'mcp_servers_json' ? value : current.mcpServersJson,
     }))
 
     try {
@@ -90,4 +93,3 @@ export function useSettings() {
 
   return context
 }
-

@@ -45,7 +45,7 @@ function SkillRow({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Badge variant="outline" className="border-border/60 text-[10px] uppercase">
+        <Badge variant="outline" className="border-border/60 capitalize">
           {status}
         </Badge>
         <DropdownMenu>
@@ -97,7 +97,7 @@ export function Sidebar({
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950/95">
       <div className="space-y-3 border-b border-border/70 px-4 py-5 pr-14">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-blue-300">
+        <div className="font-heading text-xl text-zinc-50">
           Harness Library
         </div>
         <div className="text-sm text-muted-foreground">
@@ -131,16 +131,10 @@ export function Sidebar({
                         {harness.spec.goal || 'No goal yet'}
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className="border-border/60 text-[10px] uppercase"
-                        >
+                        <Badge variant="outline" className="border-border/60 capitalize">
                           {harness.status}
                         </Badge>
-                        <Badge
-                          variant="outline"
-                          className="border-border/60 text-[10px] uppercase"
-                        >
+                        <Badge variant="outline" className="border-border/60">
                           {harness.spec.tools.length} tools
                         </Badge>
                         <span className="text-[11px] text-muted-foreground">

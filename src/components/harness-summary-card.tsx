@@ -40,7 +40,7 @@ export function HarnessSummaryCard({
           <CardContent className="grid gap-3 pb-4">
             <div className="grid gap-2 md:grid-cols-2">
               <div className="rounded-lg border border-border/70 bg-card/60 p-3">
-                <div className="mb-1 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   <Sparkles className="size-3.5" />
                   Goal
                 </div>
@@ -49,7 +49,7 @@ export function HarnessSummaryCard({
                 </div>
               </div>
               <div className="rounded-lg border border-border/70 bg-card/60 p-3">
-                <div className="mb-1 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   <Cpu className="size-3.5" />
                   Audience
                 </div>
@@ -65,12 +65,15 @@ export function HarnessSummaryCard({
               <Badge variant="outline" className="border-border/70 bg-card/60">
                 Tools: {harness.spec.tools.length}
               </Badge>
-              <Badge variant="outline" className="border-border/70 bg-card/60">
+              <Badge
+                variant="outline"
+                className="border-border/70 bg-card/60 capitalize"
+              >
                 Status: {harness.status}
               </Badge>
             </div>
             <div className="rounded-lg border border-border/70 bg-card/60 p-3">
-              <div className="mb-1 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+              <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <LockKeyhole className="size-3.5" />
                 Memory Policy
               </div>
@@ -79,7 +82,7 @@ export function HarnessSummaryCard({
               </div>
             </div>
             <div className="rounded-lg border border-border/70 bg-card/60 p-3">
-              <div className="mb-1 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+              <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <FileCode2 className="size-3.5" />
                 System Prompt
               </div>
@@ -93,4 +96,3 @@ export function HarnessSummaryCard({
     </Collapsible>
   )
 }
-

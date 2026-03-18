@@ -25,6 +25,14 @@ function stringifyPart(value: unknown) {
   return JSON.stringify(value, null, 2)
 }
 
+function humanizeToolName(value: string) {
+  return value
+    .split(/[_-]+/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
 function ToolTraceCard({
   part,
   toolNames,
@@ -34,7 +42,7 @@ function ToolTraceCard({
 }) {
   const toolKey =
     part.type === 'dynamic-tool' ? part.toolName : part.type.replace(/^tool-/, '')
-  const displayName = toolNames[toolKey] || toolKey
+  const displayName = toolNames[toolKey] || humanizeToolName(toolKey)
 
   return (
     <Collapsible
@@ -48,7 +56,7 @@ function ToolTraceCard({
             <span className="truncate font-medium text-foreground">
               {displayName}
             </span>
-            <Badge variant="outline" className="border-border/60 text-[10px] uppercase">
+            <Badge variant="outline" className="border-border/60 capitalize">
               {part.state.replace(/-/g, ' ')}
             </Badge>
           </div>
@@ -63,7 +71,7 @@ function ToolTraceCard({
       <CollapsibleContent className="space-y-3 border-t border-border/60 px-3 py-3">
         {'input' in part && part.input !== undefined ? (
           <div className="space-y-1">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="text-xs font-medium text-muted-foreground">
               Input
             </div>
             <pre className="overflow-x-auto rounded-md bg-black/30 p-2 text-[11px] leading-5 text-zinc-200">
@@ -73,7 +81,7 @@ function ToolTraceCard({
         ) : null}
         {'output' in part && part.output !== undefined ? (
           <div className="space-y-1">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="text-xs font-medium text-muted-foreground">
               Output
             </div>
             <pre className="overflow-x-auto rounded-md bg-black/30 p-2 text-[11px] leading-5 text-zinc-200">
@@ -83,7 +91,7 @@ function ToolTraceCard({
         ) : null}
         {'errorText' in part && part.errorText ? (
           <div className="space-y-1">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="text-xs font-medium text-muted-foreground">
               Error
             </div>
             <pre className="overflow-x-auto rounded-md bg-red-500/10 p-2 text-[11px] leading-5 text-red-200">
@@ -142,7 +150,7 @@ export function ChatMessage({
               : 'border-border/80 bg-card text-card-foreground',
           )}
         >
-          <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
             {isUser ? (
               <>
                 <UserRound className="size-3.5" />
