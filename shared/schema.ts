@@ -138,6 +138,20 @@ export function createEmptyHarnessSpec(model = DEFAULT_MODEL): HarnessSpec {
   })
 }
 
+export function resolveModelSelection(
+  harnessModel: string | undefined,
+  defaultModel: string,
+) {
+  const nextDefault = defaultModel.trim() || DEFAULT_MODEL
+  const currentModel = harnessModel?.trim() || ''
+
+  if (!currentModel || currentModel === DEFAULT_MODEL) {
+    return nextDefault
+  }
+
+  return currentModel
+}
+
 export function parseMcpServersJson(raw: string) {
   const trimmed = raw.trim()
 

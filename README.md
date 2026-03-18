@@ -245,10 +245,11 @@ If the JSON is invalid or a configured MCP server is unavailable, YunForge skips
 pnpm install
 ```
 
-`postinstall` rebuilds the native SQLite binding automatically. If your machine still fails to load `better-sqlite3`, run:
+With pnpm v10+, build scripts are ignored by default. To compile native modules like `better-sqlite3`, you must approve the build scripts and rebuild:
 
 ```bash
-npm rebuild better-sqlite3
+pnpm approve-builds
+pnpm rebuild
 ```
 
 ### Start

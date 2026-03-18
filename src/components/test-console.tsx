@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { DefaultChatTransport } from 'ai'
 import { useChat, type UIMessage } from '@ai-sdk/react'
+import { AnimatePresence } from 'framer-motion'
 import { FlaskConical, Play, Send } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -9,7 +10,9 @@ import type { Harness } from '@shared/schema'
 import { ChatMessage } from '@/components/chat-message'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { MagneticFrame } from '@/components/ui/magnetic-frame'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { ShimmerText } from '@/components/ui/shimmer-text'
 import { Textarea } from '@/components/ui/textarea'
 
 export function TestConsole({
@@ -87,28 +90,41 @@ export function TestConsole({
               ? 'Compiled and ready. Built-in web search and configured MCP tools are available during the test run.'
               : 'Compile after builder changes to refresh the assistant.'}
         </div>
-        <Button
-          variant={harness.status === 'compiled' ? 'secondary' : 'default'}
-          onClick={onCompile}
-          disabled={disabled}
-        >
-          <Play className="size-4" />
-          Compile & Test
-        </Button>
+        <MagneticFrame disabled={disabled}>
+          <Button
+            variant={harness.status === 'compiled' ? 'secondary' : 'default'}
+            onClick={onCompile}
+            disabled={disabled}
+          >
+            <Play className="size-4" />
+            Compile & Test
+          </Button>
+        </MagneticFrame>
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-5 py-6">
           {messages.length ? (
-            messages.map((message) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                compact
-                toolNames={toolNames}
-                assistantLabel="Assistant"
-              />
-            ))
+            <>
+              {messages.map((message) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  compact
+                  toolNames={toolNames}
+                  assistantLabel="Assistant"
+                />
+              ))}
+              <AnimatePresence>
+                {status === 'streaming' ? (
+                  <ShimmerText
+                    key="assistant-shimmer"
+                    label="running tools and shaping the reply"
+                    className="px-4 py-5"
+                  />
+                ) : null}
+              </AnimatePresence>
+            </>
           ) : (
             <div className="rounded-2xl border border-dashed border-border/60 bg-black/20 p-5 text-sm text-muted-foreground">
               Compile the current harness, then run sample prompts here to inspect
@@ -149,19 +165,28 @@ export function TestConsole({
             <div className="text-xs text-muted-foreground">
               Tool traces appear inline under assistant messages.
             </div>
-            <Button
-              type="submit"
+            <MagneticFrame
               disabled={
                 disabled ||
                 harness.status !== 'compiled' ||
                 status === 'streaming' ||
                 !input.trim()
               }
-              className="rounded-2xl px-4"
             >
-              <Send className="size-4" />
-              Send
-            </Button>
+              <Button
+                type="submit"
+                disabled={
+                  disabled ||
+                  harness.status !== 'compiled' ||
+                  status === 'streaming' ||
+                  !input.trim()
+                }
+                className="rounded-2xl px-4"
+              >
+                <Send className="size-4" />
+                Send
+              </Button>
+            </MagneticFrame>
           </div>
         </form>
       </div>

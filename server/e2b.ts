@@ -1,6 +1,11 @@
 import { CommandExitError, Sandbox } from 'e2b'
 
-import type { Harness, Settings, SkillSpec } from '../shared/schema.ts'
+import {
+  resolveModelSelection,
+  type Harness,
+  type Settings,
+  type SkillSpec,
+} from '../shared/schema.ts'
 
 type ExecuteSkillInput = {
   skill: SkillSpec
@@ -123,7 +128,10 @@ export async function executeSkillInSandbox({
               name: harness.name,
               goal: harness.spec.goal,
               audience: harness.spec.audience,
-              model: harness.spec.model,
+              model: resolveModelSelection(
+                harness.spec.model,
+                settings.defaultModel,
+              ),
               memoryPolicy: harness.spec.memoryPolicy,
             },
             settings: {

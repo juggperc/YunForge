@@ -6,6 +6,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 
 import type { Harness, SkillSpec } from '@shared/schema'
@@ -20,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { MagneticFrame } from '@/components/ui/magnetic-frame'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { formatTimestamp } from '@/lib/chat'
@@ -97,9 +99,7 @@ export function Sidebar({
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950/95">
       <div className="space-y-3 border-b border-border/70 px-4 py-5 pr-14">
-        <div className="font-heading text-xl text-zinc-50">
-          Harness Library
-        </div>
+        <div className="font-heading text-xl text-zinc-50">Harness Library</div>
         <div className="text-sm text-muted-foreground">
           Switch agents, manage generated skills, and export portable snapshots.
         </div>
@@ -112,9 +112,10 @@ export function Sidebar({
 
             return (
               <Collapsible key={harness.id} open={selected}>
-                <div
+                <motion.div
+                  layout
                   className={cn(
-                    'rounded-2xl border transition-colors',
+                    'surface-soft rounded-[26px] border transition-colors',
                     selected
                       ? 'border-blue-400/30 bg-blue-500/10'
                       : 'border-border/60 bg-black/20 hover:bg-card/70',
@@ -198,7 +199,7 @@ export function Sidebar({
                       )}
                     </div>
                   </CollapsibleContent>
-                </div>
+                </motion.div>
               </Collapsible>
             )
           })}
@@ -206,18 +207,24 @@ export function Sidebar({
       </ScrollArea>
 
       <div className="grid gap-2 border-t border-border/70 p-4">
-        <Button variant="outline" className="justify-start" onClick={onOpenImport}>
-          <Upload className="size-4" />
-          Import Agent
-        </Button>
-        <Button className="justify-start" onClick={onNewHarness}>
-          <PackagePlus className="size-4" />
-          New Harness
-        </Button>
-        <Button variant="ghost" className="justify-start" onClick={onOpenSettings}>
-          <Settings2 className="size-4" />
-          Settings
-        </Button>
+        <MagneticFrame>
+          <Button variant="outline" className="justify-start" onClick={onOpenImport}>
+            <Upload className="size-4" />
+            Import Agent
+          </Button>
+        </MagneticFrame>
+        <MagneticFrame>
+          <Button className="justify-start" onClick={onNewHarness}>
+            <PackagePlus className="size-4" />
+            New Harness
+          </Button>
+        </MagneticFrame>
+        <MagneticFrame>
+          <Button variant="ghost" className="justify-start" onClick={onOpenSettings}>
+            <Settings2 className="size-4" />
+            Settings
+          </Button>
+        </MagneticFrame>
       </div>
     </div>
   )

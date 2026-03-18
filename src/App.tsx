@@ -1,4 +1,5 @@
 import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import {
   Bot,
   FileCode2,
@@ -13,7 +14,12 @@ import {
 import { toast } from 'sonner'
 import type { UIMessage } from 'ai'
 
-import type { ForgeExport, Harness, SkillSpec } from '@shared/schema'
+import {
+  resolveModelSelection,
+  type ForgeExport,
+  type Harness,
+  type SkillSpec,
+} from '@shared/schema'
 
 import { BuilderPanel } from '@/components/builder-panel'
 import { HarnessSummaryCard } from '@/components/harness-summary-card'
@@ -31,6 +37,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { MagneticFrame } from '@/components/ui/magnetic-frame'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Sheet,
@@ -73,22 +80,26 @@ function RailAction({
   active?: boolean
 }) {
   return (
-    <Button
-      variant={active ? 'secondary' : 'ghost'}
-      className="h-auto w-full flex-col gap-2 rounded-2xl px-0 py-3 text-[11px]"
-      onClick={onClick}
-    >
-      <Icon className="size-4" />
-      <span>{label}</span>
-    </Button>
+    <MagneticFrame>
+      <Button
+        variant={active ? 'secondary' : 'ghost'}
+        className="h-auto w-full flex-col gap-2 rounded-2xl px-0 py-3 text-[11px]"
+        onClick={onClick}
+      >
+        <Icon className="size-4" />
+        <span>{label}</span>
+      </Button>
+    </MagneticFrame>
   )
 }
 
 function HarnessSpecPanel({
   harness,
+  defaultModel,
   onOpenLibrary,
 }: {
   harness: Harness
+  defaultModel: string
   onOpenLibrary: () => void
 }) {
   const [summaryOpen, setSummaryOpen] = useState(true)
@@ -109,6 +120,7 @@ function HarnessSpecPanel({
         <div className="space-y-4 p-4">
           <HarnessSummaryCard
             harness={harness}
+            defaultModel={defaultModel}
             open={summaryOpen}
             onOpenChange={setSummaryOpen}
           />
@@ -177,9 +189,13 @@ function AppShell() {
     skillName: string
   } | null>(null)
   const didBootstrap = useRef(false)
+  const previousDefaultModelRef = useRef(settings.defaultModel)
 
   const selectedHarness =
     harnesses.find((harness) => harness.id === selectedHarnessId) ?? null
+  const selectedHarnessModel = selectedHarness
+    ? resolveModelSelection(selectedHarness.spec.model, settings.defaultModel)
+    : settings.defaultModel
   const editingHarness =
     harnesses.find((harness) => harness.id === editingSkill?.harnessId) ?? null
   const editingSkillValue =
@@ -227,6 +243,40 @@ function AppShell() {
     didBootstrap.current = true
     bootstrapHarnesses()
   }, [ready])
+
+  useEffect(() => {
+    if (!ready) {
+      return
+    }
+
+    const previousModel = previousDefaultModelRef.current
+    const nextModel = settings.defaultModel.trim()
+
+    if (!nextModel || previousModel === nextModel) {
+      previousDefaultModelRef.current = nextModel || previousModel
+      return
+    }
+
+    setHarnesses((current) =>
+      current.map((harness) => {
+        const currentModel = harness.spec.model.trim()
+
+        if (currentModel && currentModel !== previousModel) {
+          return harness
+        }
+
+        return {
+          ...harness,
+          spec: {
+            ...harness.spec,
+            model: nextModel,
+          },
+        }
+      }),
+    )
+
+    previousDefaultModelRef.current = nextModel
+  }, [ready, settings.defaultModel])
 
   async function handleCreateHarness() {
     const created = await createHarness()
@@ -364,12 +414,10 @@ function AppShell() {
   return (
     <>
       <div className="flex h-full min-h-0 bg-background">
-        <aside className="flex h-full w-[92px] flex-col justify-between border-r border-border/70 bg-zinc-950/92 px-3 py-4">
+        <aside className="flex h-full w-[88px] flex-col justify-between border-r border-border/70 bg-zinc-950/92 px-3 py-4">
           <div className="space-y-4">
-            <div className="rounded-2xl border border-border/70 bg-card/60 px-3 py-4 text-center">
-              <div className="font-heading text-sm text-blue-300">
-                YF
-              </div>
+            <div className="surface-soft rounded-[26px] border border-border/70 px-3 py-4 text-center">
+              <div className="font-heading text-sm text-blue-300">YF</div>
               <div className="mt-2 text-xs text-zinc-50">Forge</div>
             </div>
             <div className="space-y-2">
@@ -398,18 +446,22 @@ function AppShell() {
             </div>
           </div>
           <div className="space-y-3">
-            <div className="rounded-2xl border border-border/70 bg-card/60 px-3 py-3">
-              <div className="text-[10px] text-muted-foreground">
-                Active
+            <motion.div
+              layout
+              className="surface-soft rounded-[28px] border border-border/70 px-2 py-2.5 text-center"
+            >
+              <div className="mx-auto flex size-12 items-center justify-center rounded-[18px] border border-border/70 bg-black/25 font-heading text-sm text-zinc-50">
+                {selectedHarness.name
+                  .split(/\s+/g)
+                  .slice(0, 2)
+                  .map((part) => part[0]?.toUpperCase() ?? '')
+                  .join('')}
               </div>
-              <div className="mt-2 truncate text-xs text-zinc-50">{selectedHarness.name}</div>
-              <Badge
-                variant="outline"
-                className="mt-3 w-full justify-center border-border/70 bg-black/20 capitalize"
-              >
-                {selectedHarness.status}
-              </Badge>
-            </div>
+              <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+                <span className="inline-flex size-1.5 rounded-full bg-emerald-300" />
+                active
+              </div>
+            </motion.div>
             <RailAction
               icon={Settings2}
               label="Settings"
@@ -421,60 +473,71 @@ function AppShell() {
 
         <main className="min-w-0 flex-1 overflow-hidden bg-zinc-950/30">
           <div className="flex h-full min-h-0 flex-col">
-            <header className="border-b border-border/70 bg-background/92 px-6 py-5">
-              <div className="mx-auto flex w-full max-w-6xl items-start justify-between gap-6">
-                <div className="min-w-0 space-y-3">
+            <header className="border-b border-border/70 bg-background/92 px-4 py-4">
+              <motion.div
+                layout
+                className="surface-panel mx-auto grid w-full max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[28px] border border-border/70 px-5 py-4"
+              >
+                <div className="min-w-0 space-y-2">
                   <div className="flex items-center gap-2 text-sm text-blue-300">
                     <Sparkles className="size-3.5" />
-                    Builder Workspace
+                    Builder workspace
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="font-heading truncate text-2xl text-zinc-50 md:text-3xl">
+                    <h1 className="font-heading truncate text-2xl text-zinc-50 md:text-[2rem]">
                       {selectedHarness.name}
                     </h1>
                     <Badge variant="outline" className="border-border/70 capitalize">
                       {selectedHarness.status}
                     </Badge>
                   </div>
-                  <div className="max-w-3xl text-sm text-muted-foreground">
+                  <div className="max-w-4xl truncate text-sm text-muted-foreground">
                     {selectedHarness.spec.goal
                       ? selectedHarness.spec.goal
-                      : 'Describe the assistant you want to build. Specs, harness management, and testing now live in side panels so the chat stays visible.'}
+                      : 'Describe the assistant you want to build. Spec review, harness management, and testing stay tucked into side panels.'}
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="border-border/70 bg-card/50">
-                      Model: {selectedHarness.spec.model || settings.defaultModel}
-                    </Badge>
-                    <Badge variant="outline" className="border-border/70 bg-card/50">
-                      Tools: {selectedHarness.spec.tools.length}
-                    </Badge>
-                    <Badge variant="outline" className="border-border/70 bg-card/50">
-                      Audience: {selectedHarness.spec.audience || 'unset'}
-                    </Badge>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-full border border-border/70 bg-black/15 px-2.5 py-1 text-zinc-100">
+                      model {selectedHarnessModel}
+                    </span>
+                    <span className="rounded-full border border-border/70 bg-black/15 px-2.5 py-1 text-zinc-100">
+                      {selectedHarness.spec.tools.length} tools
+                    </span>
+                    {selectedHarness.spec.audience ? (
+                      <span className="max-w-[24rem] truncate rounded-full border border-border/70 bg-black/15 px-2.5 py-1">
+                        {selectedHarness.spec.audience}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                  <Button variant="outline" onClick={() => setSpecOpen(true)}>
-                    <FileCode2 className="size-4" />
-                    Spec
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      handleOpenTestConsole().catch((error) => {
-                        toast.error(
-                          error instanceof Error ? error.message : 'Failed to open test console.',
-                        )
-                      })
-                    }}
-                    disabled={Boolean(assistantDisabledReason)}
-                  >
-                    <Play className="size-4" />
-                    {selectedHarness.status === 'compiled'
-                      ? 'Open Test Console'
-                      : 'Compile & Test'}
-                  </Button>
+                  <MagneticFrame>
+                    <Button variant="outline" onClick={() => setSpecOpen(true)}>
+                      <FileCode2 className="size-4" />
+                      Spec
+                    </Button>
+                  </MagneticFrame>
+                  <MagneticFrame disabled={Boolean(assistantDisabledReason)}>
+                    <Button
+                      onClick={() => {
+                        handleOpenTestConsole().catch((error) => {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : 'Failed to open test console.',
+                          )
+                        })
+                      }}
+                      disabled={Boolean(assistantDisabledReason)}
+                    >
+                      <Play className="size-4" />
+                      {selectedHarness.status === 'compiled'
+                        ? 'Open Test Console'
+                        : 'Compile & Test'}
+                    </Button>
+                  </MagneticFrame>
                 </div>
-              </div>
+              </motion.div>
             </header>
 
             <BuilderPanel
@@ -536,6 +599,7 @@ function AppShell() {
         >
           <HarnessSpecPanel
             harness={selectedHarness}
+            defaultModel={settings.defaultModel}
             onOpenLibrary={() => {
               setSpecOpen(false)
               setLibraryOpen(true)
@@ -547,7 +611,7 @@ function AppShell() {
       <Sheet open={testOpen} onOpenChange={setTestOpen}>
         <SheetContent
           side="right"
-          className="w-[min(720px,calc(100vw-92px))] border-l border-border/70 bg-zinc-950/95 p-0 sm:max-w-none"
+          className="w-[min(720px,calc(100vw-88px))] border-l border-border/70 bg-zinc-950/95 p-0 sm:max-w-none"
         >
           <TestConsole
             key={selectedHarness.id}

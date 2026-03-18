@@ -1,4 +1,5 @@
 import type { UIMessage } from 'ai'
+import { motion } from 'framer-motion'
 import {
   ChevronDown,
   TerminalSquare,
@@ -121,7 +122,11 @@ export function ChatMessage({
   const toolParts = getToolParts(message)
 
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 14, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 130, damping: 20 }}
       className={cn(
         'flex gap-3 px-4 py-3',
         compact ? 'py-2' : 'py-3',
@@ -189,6 +194,6 @@ export function ChatMessage({
           <AvatarFallback className="bg-zinc-900 text-zinc-100">U</AvatarFallback>
         </Avatar>
       ) : null}
-    </div>
+    </motion.div>
   )
 }

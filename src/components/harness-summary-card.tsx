@@ -1,6 +1,6 @@
 import { ChevronDown, Cpu, FileCode2, LockKeyhole, Sparkles } from 'lucide-react'
 
-import type { Harness } from '@shared/schema'
+import { resolveModelSelection, type Harness } from '@shared/schema'
 
 import { Badge } from '@/components/ui/badge'
 import {
@@ -12,17 +12,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function HarnessSummaryCard({
   harness,
+  defaultModel,
   open,
   onOpenChange,
 }: {
   harness: Harness
+  defaultModel: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const resolvedModel = resolveModelSelection(harness.spec.model, defaultModel)
+
   return (
     <Collapsible open={open} onOpenChange={onOpenChange}>
-      <Card size="sm" className="border border-border/70 bg-black/20 shadow-none">
-        <CardHeader className="gap-2">
+      <Card size="sm" className="surface-soft border border-border/70 shadow-none">
+        <CardHeader className="gap-2 pb-3">
           <div className="flex items-center justify-between gap-3">
             <div>
               <CardTitle className="text-sm">Live HarnessSpec</CardTitle>
@@ -37,10 +41,10 @@ export function HarnessSummaryCard({
           </div>
         </CardHeader>
         <CollapsibleContent>
-          <CardContent className="grid gap-3 pb-4">
+          <CardContent className="grid gap-3 pb-4 pt-0">
             <div className="grid gap-2 md:grid-cols-2">
-              <div className="rounded-lg border border-border/70 bg-card/60 p-3">
-                <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
                   <Sparkles className="size-3.5" />
                   Goal
                 </div>
@@ -48,8 +52,8 @@ export function HarnessSummaryCard({
                   {harness.spec.goal || 'Waiting for a brief.'}
                 </div>
               </div>
-              <div className="rounded-lg border border-border/70 bg-card/60 p-3">
-                <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
                   <Cpu className="size-3.5" />
                   Audience
                 </div>
@@ -60,7 +64,7 @@ export function HarnessSummaryCard({
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline" className="border-border/70 bg-card/60">
-                Model: {harness.spec.model || 'unset'}
+                Model: {resolvedModel || 'unset'}
               </Badge>
               <Badge variant="outline" className="border-border/70 bg-card/60">
                 Tools: {harness.spec.tools.length}
@@ -72,8 +76,8 @@ export function HarnessSummaryCard({
                 Status: {harness.status}
               </Badge>
             </div>
-            <div className="rounded-lg border border-border/70 bg-card/60 p-3">
-              <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+              <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
                 <LockKeyhole className="size-3.5" />
                 Memory Policy
               </div>
@@ -81,8 +85,8 @@ export function HarnessSummaryCard({
                 {harness.spec.memoryPolicy || 'Session-local by default.'}
               </div>
             </div>
-            <div className="rounded-lg border border-border/70 bg-card/60 p-3">
-              <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+              <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
                 <FileCode2 className="size-3.5" />
                 System Prompt
               </div>

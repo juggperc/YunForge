@@ -100,6 +100,10 @@ export function SettingsSheet({
               placeholder="deepseek/deepseek-chat"
               className="bg-black/20"
             />
+            <div className="text-xs text-muted-foreground">
+              Harnesses still following the workspace default will switch to this
+              model automatically.
+            </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">

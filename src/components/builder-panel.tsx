@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { DefaultChatTransport } from 'ai'
 import { useChat, type UIMessage } from '@ai-sdk/react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -8,7 +9,9 @@ import type { Harness } from '@shared/schema'
 
 import { ChatMessage } from '@/components/chat-message'
 import { Button } from '@/components/ui/button'
+import { MagneticFrame } from '@/components/ui/magnetic-frame'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { ShimmerText } from '@/components/ui/shimmer-text'
 import { Textarea } from '@/components/ui/textarea'
 
 const starterPrompts = [
@@ -72,15 +75,27 @@ export function BuilderPanel({
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
+              <AnimatePresence>
+                {status === 'streaming' ? (
+                  <ShimmerText
+                    key="builder-shimmer"
+                    label="forging the next spec pass"
+                    className="px-4 py-5"
+                  />
+                ) : null}
+              </AnimatePresence>
               <div ref={bottomRef} />
             </div>
           ) : (
             <div className="flex flex-1 items-center justify-center">
-              <div className="w-full max-w-4xl space-y-6 text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                className="w-full max-w-4xl space-y-6 text-center"
+              >
                 <div className="space-y-3">
-                  <div className="text-sm text-blue-300">
-                    Builder Chat
-                  </div>
+                  <div className="text-sm text-blue-300">Builder Chat</div>
                   <div className="font-heading text-3xl text-zinc-50 md:text-4xl">
                     What assistant do you want to forge?
                   </div>
@@ -91,19 +106,32 @@ export function BuilderPanel({
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {starterPrompts.map((prompt) => (
-                    <Button
+                  {starterPrompts.map((prompt, index) => (
+                    <motion.div
                       key={prompt}
-                      type="button"
-                      variant="outline"
-                      className="h-auto justify-start whitespace-normal rounded-2xl border-border/70 bg-card/50 px-4 py-4 text-left leading-6"
-                      onClick={() => setInput(prompt)}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 120,
+                        damping: 18,
+                        delay: index * 0.06,
+                      }}
                     >
-                      {prompt}
-                    </Button>
+                      <MagneticFrame>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="surface-soft h-auto w-full justify-start whitespace-normal rounded-2xl border-border/70 px-4 py-4 text-left leading-6"
+                          onClick={() => setInput(prompt)}
+                        >
+                          {prompt}
+                        </Button>
+                      </MagneticFrame>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             </div>
           )}
         </div>
@@ -141,14 +169,16 @@ export function BuilderPanel({
                 ? error.message
                 : 'Harness status switches back to draft whenever the spec changes.'}
             </div>
-            <Button
-              type="submit"
-              disabled={disabled || status === 'streaming' || !input.trim()}
-              className="rounded-2xl px-4"
-            >
-              <Send className="size-4" />
-              Send
-            </Button>
+            <MagneticFrame disabled={disabled || status === 'streaming' || !input.trim()}>
+              <Button
+                type="submit"
+                disabled={disabled || status === 'streaming' || !input.trim()}
+                className="rounded-2xl px-4"
+              >
+                <Send className="size-4" />
+                Send
+              </Button>
+            </MagneticFrame>
           </div>
         </form>
       </div>

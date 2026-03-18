@@ -113,6 +113,36 @@ function nowIso() {
   return new Date().toISOString()
 }
 
+const syncHarnessModelsToDefault = database.transaction(
+  (previousModel: string, nextModel: string) => {
+    const rows = listHarnessesStatement.all() as HarnessRow[]
+
+    for (const row of rows) {
+      const harness = parseHarness(row)
+      const currentModel = harness.spec.model.trim()
+
+      if (currentModel && currentModel !== previousModel) {
+        continue
+      }
+
+      if (currentModel === nextModel) {
+        continue
+      }
+
+      updateHarnessStatement.run({
+        id: harness.id,
+        name: harness.name,
+        spec: serializeSpec({
+          ...harness.spec,
+          model: nextModel,
+        }),
+        status: harness.status,
+        updated_at: row.updated_at,
+      })
+    }
+  },
+)
+
 export function getSettings(): Settings {
   const rows = listSettingsStatement.all() as Array<{ key: string; value: string }>
 
@@ -130,10 +160,17 @@ export function getSettings(): Settings {
 }
 
 export function saveSetting(key: SettingsKey, value: string) {
+  const previousSettings = getSettings()
+
   upsertSettingStatement.run({
     key,
     value,
   })
+
+  if (key === 'default_model') {
+    const nextModel = value.trim() || DEFAULT_MODEL
+    syncHarnessModelsToDefault(previousSettings.defaultModel, nextModel)
+  }
 
   return getSettings()
 }

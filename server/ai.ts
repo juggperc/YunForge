@@ -12,6 +12,7 @@ import {
   DEFAULT_MODEL,
   deriveHarnessName,
   HarnessSpecSchema,
+  resolveModelSelection,
   type Harness,
   type HarnessSpec,
   type Settings,
@@ -61,7 +62,10 @@ export function normalizeHarnessSpec(
 
   const goal = parsed.goal.trim()
   const audience = parsed.audience.trim()
-  const model = parsed.model.trim() || currentSpec.model || defaultModel || DEFAULT_MODEL
+  const model = parsed.model.trim() ||
+    resolveModelSelection(currentSpec.model, defaultModel) ||
+    defaultModel ||
+    DEFAULT_MODEL
   const systemPrompt =
     parsed.systemPrompt.trim() ||
     currentSpec.systemPrompt.trim() ||
@@ -101,7 +105,13 @@ function getOpenRouter(settings: Settings) {
   })
 }
 
-function builderSystemPrompt(harness: Harness, warnings: string[]) {
+function builderSystemPrompt(
+  harness: Harness,
+  warnings: string[],
+  defaultModel: string,
+) {
+  const effectiveModel = resolveModelSelection(harness.spec.model, defaultModel)
+
   return [
     'You are YunForge, a local harness builder for chat-first AI assistants.',
     'Your job is to guide the user toward a concrete, deployable assistant specification.',
@@ -118,7 +128,7 @@ function builderSystemPrompt(harness: Harness, warnings: string[]) {
     `Current harness name: ${harness.name}`,
     `Current goal: ${harness.spec.goal || '(unset)'}`,
     `Current audience: ${harness.spec.audience || '(unset)'}`,
-    `Current model: ${harness.spec.model || '(unset)'}`,
+    `Current model: ${effectiveModel || '(unset)'}`,
     `Current memory policy: ${harness.spec.memoryPolicy || '(unset)'}`,
     `Current tools: ${harness.spec.tools.map((tool) => tool.name).join(', ') || '(none)'}`,
     warnings.length
@@ -176,7 +186,10 @@ export async function createBuilderResponse(input: {
   onSpecReady: (nextSpec: HarnessSpec, nextName: string) => Promise<void>
 }) {
   const openrouter = getOpenRouter(input.settings)
-  const modelId = input.harness.spec.model || input.settings.defaultModel || DEFAULT_MODEL
+  const modelId = resolveModelSelection(
+    input.harness.spec.model,
+    input.settings.defaultModel,
+  )
   const modelMessages = await convertToModelMessages(input.messages)
   const runtimeTools = await createRuntimeTools({
     harness: input.harness,
@@ -186,7 +199,11 @@ export async function createBuilderResponse(input: {
 
   const result = streamText({
     model: openrouter(modelId),
-    system: builderSystemPrompt(input.harness, runtimeTools.warnings),
+    system: builderSystemPrompt(
+      input.harness,
+      runtimeTools.warnings,
+      input.settings.defaultModel,
+    ),
     messages: modelMessages,
     tools: runtimeTools.tools,
     stopWhen: stepCountIs(8),
@@ -230,6 +247,10 @@ export async function createAssistantResponse(input: {
   settings: Settings
 }) {
   const openrouter = getOpenRouter(input.settings)
+  const modelId = resolveModelSelection(
+    input.harness.spec.model,
+    input.settings.defaultModel,
+  )
   const runtimeTools = await createRuntimeTools({
     harness: input.harness,
     settings: input.settings,
@@ -237,7 +258,7 @@ export async function createAssistantResponse(input: {
   })
 
   const result = streamText({
-    model: openrouter(input.harness.spec.model || input.settings.defaultModel),
+    model: openrouter(modelId),
     system: assistantSystemPrompt(input.harness, runtimeTools.warnings),
     messages: await convertToModelMessages(input.messages),
     tools: runtimeTools.tools,

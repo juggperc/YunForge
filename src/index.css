@@ -112,6 +112,8 @@
     --sidebar-accent-foreground: 210 22% 96%;
     --sidebar-border: 217 16% 22%;
     --sidebar-ring: 213 94% 68%;
+    --depth-shadow: 222 35% 3%;
+    --accent-soft: 201 88% 72%;
   }
 
   .theme {
@@ -126,5 +128,52 @@
     font-family: var(--font-heading);
     font-weight: 700;
     letter-spacing: 0;
+  }
+
+  .surface-panel {
+    background:
+      linear-gradient(180deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.7)),
+      radial-gradient(circle at top, hsl(var(--accent-soft) / 0.08), transparent 48%);
+    box-shadow:
+      inset 0 1px 0 hsl(210 20% 100% / 0.05),
+      0 22px 40px -30px hsl(var(--depth-shadow) / 0.95);
+  }
+
+  .surface-soft {
+    background:
+      linear-gradient(180deg, hsl(var(--card) / 0.72), hsl(var(--card) / 0.56)),
+      radial-gradient(circle at top right, hsl(var(--accent-soft) / 0.06), transparent 48%);
+    box-shadow:
+      inset 0 1px 0 hsl(210 20% 100% / 0.05),
+      0 14px 30px -24px hsl(var(--depth-shadow) / 0.9);
+  }
+
+  .text-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--muted-foreground) / 0.45) 0%,
+      hsl(var(--foreground) / 0.98) 50%,
+      hsl(var(--muted-foreground) / 0.45) 100%
+    );
+    background-size: 220% 100%;
+    color: transparent;
+    background-clip: text;
+    -webkit-background-clip: text;
+    animation: text-shimmer 2.8s linear infinite;
+  }
+
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border) / 0.8) transparent;
+  }
+}
+
+@keyframes text-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
   }
 }
