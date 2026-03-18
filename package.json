@@ -6,12 +6,12 @@
   "scripts": {
     "dev": "concurrently -k -n client,server -c blue,green \"pnpm dev:client\" \"pnpm dev:server\"",
     "dev:client": "vite",
-    "dev:server": "tsx watch server/index.ts",
+    "dev:server": "npm rebuild better-sqlite3 && tsx watch server/index.ts",
     "build": "tsc -b && vite build",
     "build:client": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start:server": "tsx server/index.ts",
+    "start:server": "npm rebuild better-sqlite3 && tsx server/index.ts",
     "postinstall": "pnpm rebuild better-sqlite3 esbuild"
   },
   "dependencies": {
