@@ -11,6 +11,11 @@ node_modules
 dist
 dist-ssr
 *.local
+.playwright-cli/
+output/
+forge.db
+forge.db-shm
+forge.db-wal
 
 # Editor directories and files
 .vscode/*
