@@ -1,7 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+
+@font-face {
+  font-family: 'Geist Pixel Square';
+  src: url('./assets/fonts/geist-pixel-square.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -99,6 +106,7 @@
   }
 
   .theme {
-    --font-sans: 'Geist Variable', 'IBM Plex Sans', sans-serif;
+    --font-sans: 'Geist Pixel Square', 'Geist Variable', sans-serif;
+    --font-mono: 'Geist Pixel Square', 'Geist Variable', monospace;
   }
 }

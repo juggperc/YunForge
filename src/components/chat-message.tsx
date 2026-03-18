@@ -100,10 +100,12 @@ export function ChatMessage({
   message,
   toolNames = {},
   compact = false,
+  assistantLabel = 'Builder',
 }: {
   message: UIMessage
   toolNames?: Record<string, string>
   compact?: boolean
+  assistantLabel?: string
 }) {
   const isUser = message.role === 'user'
   const text = getMessageText(message)
@@ -134,7 +136,7 @@ export function ChatMessage({
       >
         <div
           className={cn(
-            'rounded-2xl border px-4 py-3 shadow-panel',
+            'rounded-[26px] border px-4 py-3 shadow-panel',
             isUser
               ? 'border-blue-400/30 bg-blue-500/10 text-zinc-50'
               : 'border-border/80 bg-card text-card-foreground',
@@ -149,7 +151,7 @@ export function ChatMessage({
             ) : (
               <>
                 <WandSparkles className="size-3.5" />
-                Builder
+                {assistantLabel}
               </>
             )}
           </div>

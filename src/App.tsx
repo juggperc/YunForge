@@ -1,16 +1,44 @@
 import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import {
+  Bot,
+  FileCode2,
+  Loader2,
+  PackagePlus,
+  Play,
+  Settings2,
+  Sparkles,
+  Upload,
+  type LucideIcon,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import type { UIMessage } from 'ai'
 
 import type { ForgeExport, Harness, SkillSpec } from '@shared/schema'
 
 import { BuilderPanel } from '@/components/builder-panel'
+import { HarnessSummaryCard } from '@/components/harness-summary-card'
 import { ImportDialog } from '@/components/import-dialog'
 import { SettingsSheet } from '@/components/settings-sheet'
 import { Sidebar } from '@/components/sidebar'
 import { SkillEditorDialog } from '@/components/skill-editor-dialog'
 import { TestConsole } from '@/components/test-console'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Toaster } from '@/components/ui/sonner'
 import { useSettings } from '@/context/settings-context'
 import {
@@ -33,6 +61,103 @@ function LoadingScreen() {
   )
 }
 
+function RailAction({
+  icon: Icon,
+  label,
+  onClick,
+  active = false,
+}: {
+  icon: LucideIcon
+  label: string
+  onClick: () => void | Promise<void>
+  active?: boolean
+}) {
+  return (
+    <Button
+      variant={active ? 'secondary' : 'ghost'}
+      className="h-auto w-full flex-col gap-2 rounded-2xl px-0 py-3 text-[10px] uppercase tracking-[0.18em]"
+      onClick={onClick}
+    >
+      <Icon className="size-4" />
+      <span>{label}</span>
+    </Button>
+  )
+}
+
+function HarnessSpecPanel({
+  harness,
+  onOpenLibrary,
+}: {
+  harness: Harness
+  onOpenLibrary: () => void
+}) {
+  const [summaryOpen, setSummaryOpen] = useState(true)
+
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-zinc-950/95">
+      <SheetHeader className="border-b border-border/70 pr-14">
+        <div className="flex items-center gap-2">
+          <FileCode2 className="size-4 text-blue-300" />
+          <SheetTitle>Harness Spec</SheetTitle>
+        </div>
+        <SheetDescription>
+          Review the live spec snapshot and generated skills without shrinking the
+          builder canvas.
+        </SheetDescription>
+      </SheetHeader>
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="space-y-4 p-4">
+          <HarnessSummaryCard
+            harness={harness}
+            open={summaryOpen}
+            onOpenChange={setSummaryOpen}
+          />
+          <Card size="sm" className="border border-border/70 bg-black/20 shadow-none">
+            <CardHeader className="border-b border-border/60">
+              <CardTitle>Generated Skills</CardTitle>
+              <CardDescription>
+                Edit or delete skills from the harness library panel.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 pb-4">
+              {harness.spec.tools.length ? (
+                harness.spec.tools.map((skill) => (
+                  <div
+                    key={`${harness.id}-${skill.name}`}
+                    className="rounded-xl border border-border/70 bg-card/60 p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm text-zinc-50">{skill.name}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {skill.description || 'Generated skill'}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="border-border/70 bg-black/20">
+                        {harness.status === 'compiled' ? 'active' : 'draft'}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-xl border border-dashed border-border/70 bg-black/20 px-3 py-4 text-xs text-muted-foreground">
+                  Generated skills will appear here after the builder creates them.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </ScrollArea>
+      <div className="border-t border-border/70 p-4">
+        <Button variant="outline" className="w-full" onClick={onOpenLibrary}>
+          <Bot className="size-4" />
+          Open Harness Library
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function AppShell() {
   const { settings, ready } = useSettings()
   const [harnesses, setHarnesses] = useState<Harness[]>([])
@@ -41,7 +166,9 @@ function AppShell() {
   const [assistantMessages, setAssistantMessages] = useState<Record<string, UIMessage[]>>({})
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-  const [rightCollapsed, setRightCollapsed] = useState(false)
+  const [libraryOpen, setLibraryOpen] = useState(false)
+  const [specOpen, setSpecOpen] = useState(false)
+  const [testOpen, setTestOpen] = useState(false)
   const [editingSkill, setEditingSkill] = useState<{
     harnessId: string
     skillName: string
@@ -170,6 +297,18 @@ function AppShell() {
     toast.success('Harness compiled for local testing')
   }
 
+  async function handleOpenTestConsole() {
+    if (!selectedHarness) {
+      return
+    }
+
+    if (selectedHarness.status !== 'compiled') {
+      await handleCompileHarness()
+    }
+
+    setTestOpen(true)
+  }
+
   async function handleDeleteSkill(harness: Harness, skill: SkillSpec) {
     const nextTools = harness.spec.tools.filter((item) => item.name !== skill.name)
     const updated = await patchHarness(harness.id, {
@@ -216,60 +355,205 @@ function AppShell() {
 
   return (
     <>
-      <div
-        className="grid h-full min-h-0 bg-background"
-        style={{
-          gridTemplateColumns: rightCollapsed
-            ? '260px minmax(0,1fr) 56px'
-            : '260px minmax(0,1fr) 420px',
-        }}
-      >
-        <Sidebar
-          harnesses={harnesses}
-          selectedHarnessId={selectedHarnessId}
-          onSelectHarness={setSelectedHarnessId}
-          onNewHarness={handleCreateHarness}
-          onDeleteHarness={handleDeleteHarness}
-          onExportHarness={handleExportHarness}
-          onCopyShareLink={handleCopyShareLink}
-          onOpenImport={() => setImportOpen(true)}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onEditSkill={(harness, skill) =>
-            setEditingSkill({ harnessId: harness.id, skillName: skill.name })
-          }
-          onDeleteSkill={handleDeleteSkill}
-        />
-        <main className="min-h-0 overflow-hidden bg-zinc-950/30">
-          <BuilderPanel
+      <div className="flex h-full min-h-0 bg-background">
+        <aside className="flex h-full w-[92px] flex-col justify-between border-r border-border/70 bg-zinc-950/92 px-3 py-4">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-border/70 bg-card/60 px-3 py-4 text-center">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-blue-300">
+                YF
+              </div>
+              <div className="mt-2 text-xs text-zinc-50">Forge</div>
+            </div>
+            <div className="space-y-2">
+              <RailAction
+                icon={Bot}
+                label="Agents"
+                active={libraryOpen}
+                onClick={() => setLibraryOpen(true)}
+              />
+              <RailAction
+                icon={PackagePlus}
+                label="New"
+                onClick={() => {
+                  handleCreateHarness().catch((error) => {
+                    toast.error(
+                      error instanceof Error ? error.message : 'Failed to create harness.',
+                    )
+                  })
+                }}
+              />
+              <RailAction
+                icon={Upload}
+                label="Import"
+                onClick={() => setImportOpen(true)}
+              />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-border/70 bg-card/60 px-3 py-3">
+              <div className="text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+                Active
+              </div>
+              <div className="mt-2 truncate text-xs text-zinc-50">{selectedHarness.name}</div>
+              <Badge
+                variant="outline"
+                className="mt-3 w-full justify-center border-border/70 bg-black/20 text-[10px] uppercase"
+              >
+                {selectedHarness.status}
+              </Badge>
+            </div>
+            <RailAction
+              icon={Settings2}
+              label="Settings"
+              active={settingsOpen}
+              onClick={() => setSettingsOpen(true)}
+            />
+          </div>
+        </aside>
+
+        <main className="min-w-0 flex-1 overflow-hidden bg-zinc-950/30">
+          <div className="flex h-full min-h-0 flex-col">
+            <header className="border-b border-border/70 bg-background/92 px-6 py-5">
+              <div className="mx-auto flex w-full max-w-6xl items-start justify-between gap-6">
+                <div className="min-w-0 space-y-3">
+                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-blue-300">
+                    <Sparkles className="size-3.5" />
+                    Builder Workspace
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="truncate text-2xl text-zinc-50">{selectedHarness.name}</h1>
+                    <Badge variant="outline" className="border-border/70 uppercase">
+                      {selectedHarness.status}
+                    </Badge>
+                  </div>
+                  <div className="max-w-3xl text-sm text-muted-foreground">
+                    {selectedHarness.spec.goal
+                      ? selectedHarness.spec.goal
+                      : 'Describe the assistant you want to build. Specs, harness management, and testing now live in side panels so the chat stays visible.'}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="border-border/70 bg-card/50">
+                      Model: {selectedHarness.spec.model || settings.defaultModel}
+                    </Badge>
+                    <Badge variant="outline" className="border-border/70 bg-card/50">
+                      Tools: {selectedHarness.spec.tools.length}
+                    </Badge>
+                    <Badge variant="outline" className="border-border/70 bg-card/50">
+                      Audience: {selectedHarness.spec.audience || 'unset'}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  <Button variant="outline" onClick={() => setSpecOpen(true)}>
+                    <FileCode2 className="size-4" />
+                    Spec
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      handleOpenTestConsole().catch((error) => {
+                        toast.error(
+                          error instanceof Error ? error.message : 'Failed to open test console.',
+                        )
+                      })
+                    }}
+                    disabled={!settings.openrouterKey.trim() || !settings.e2bKey.trim()}
+                  >
+                    <Play className="size-4" />
+                    {selectedHarness.status === 'compiled'
+                      ? 'Open Test Console'
+                      : 'Compile & Test'}
+                  </Button>
+                </div>
+              </div>
+            </header>
+
+            <BuilderPanel
+              key={selectedHarness.id}
+              harness={selectedHarness}
+              messages={builderMessages[selectedHarness.id] ?? []}
+              onMessagesChange={(messages) =>
+                setBuilderMessages((current) => ({
+                  ...current,
+                  [selectedHarness.id]: messages,
+                }))
+              }
+              onHarnessRefresh={() => refreshHarnesses(selectedHarness.id)}
+              disabled={!settings.openrouterKey.trim()}
+            />
+          </div>
+        </main>
+      </div>
+
+      <Sheet open={libraryOpen} onOpenChange={setLibraryOpen}>
+        <SheetContent
+          side="left"
+          className="w-[380px] border-r border-border/70 bg-zinc-950/95 p-0 sm:max-w-[380px]"
+        >
+          <Sidebar
+            harnesses={harnesses}
+            selectedHarnessId={selectedHarnessId}
+            onSelectHarness={(id) => {
+              setSelectedHarnessId(id)
+              setLibraryOpen(false)
+            }}
+            onNewHarness={async () => {
+              await handleCreateHarness()
+              setLibraryOpen(false)
+            }}
+            onDeleteHarness={handleDeleteHarness}
+            onExportHarness={handleExportHarness}
+            onCopyShareLink={handleCopyShareLink}
+            onOpenImport={() => {
+              setLibraryOpen(false)
+              setImportOpen(true)
+            }}
+            onOpenSettings={() => {
+              setLibraryOpen(false)
+              setSettingsOpen(true)
+            }}
+            onEditSkill={(harness, skill) =>
+              setEditingSkill({ harnessId: harness.id, skillName: skill.name })
+            }
+            onDeleteSkill={handleDeleteSkill}
+          />
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={specOpen} onOpenChange={setSpecOpen}>
+        <SheetContent
+          side="right"
+          className="w-[440px] border-l border-border/70 bg-zinc-950/95 p-0 sm:max-w-[440px]"
+        >
+          <HarnessSpecPanel
+            harness={selectedHarness}
+            onOpenLibrary={() => {
+              setSpecOpen(false)
+              setLibraryOpen(true)
+            }}
+          />
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={testOpen} onOpenChange={setTestOpen}>
+        <SheetContent
+          side="right"
+          className="w-[min(720px,calc(100vw-92px))] border-l border-border/70 bg-zinc-950/95 p-0 sm:max-w-none"
+        >
+          <TestConsole
             key={selectedHarness.id}
             harness={selectedHarness}
-            messages={builderMessages[selectedHarness.id] ?? []}
+            messages={assistantMessages[selectedHarness.id] ?? []}
             onMessagesChange={(messages) =>
-              setBuilderMessages((current) => ({
+              setAssistantMessages((current) => ({
                 ...current,
                 [selectedHarness.id]: messages,
               }))
             }
-            onHarnessRefresh={() => refreshHarnesses(selectedHarness.id)}
-            disabled={!settings.openrouterKey.trim()}
+            onCompile={handleCompileHarness}
+            disabled={!settings.openrouterKey.trim() || !settings.e2bKey.trim()}
           />
-        </main>
-        <TestConsole
-          key={selectedHarness.id}
-          harness={selectedHarness}
-          messages={assistantMessages[selectedHarness.id] ?? []}
-          onMessagesChange={(messages) =>
-            setAssistantMessages((current) => ({
-              ...current,
-              [selectedHarness.id]: messages,
-            }))
-          }
-          onCompile={handleCompileHarness}
-          collapsed={rightCollapsed}
-          onToggleCollapsed={() => setRightCollapsed((current) => !current)}
-          disabled={!settings.openrouterKey.trim() || !settings.e2bKey.trim()}
-        />
-      </div>
+        </SheetContent>
+      </Sheet>
 
       <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
       <ImportDialog

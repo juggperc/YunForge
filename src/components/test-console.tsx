@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { DefaultChatTransport } from 'ai'
 import { useChat, type UIMessage } from '@ai-sdk/react'
-import { ChevronLeft, FlaskConical, Play, Send } from 'lucide-react'
+import { FlaskConical, Play, Send } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { Harness } from '@shared/schema'
@@ -17,16 +17,12 @@ export function TestConsole({
   messages: initialMessages,
   onMessagesChange,
   onCompile,
-  collapsed,
-  onToggleCollapsed,
   disabled,
 }: {
   harness: Harness
   messages: UIMessage[]
   onMessagesChange: (messages: UIMessage[]) => void
   onCompile: () => Promise<void>
-  collapsed: boolean
-  onToggleCollapsed: () => void
   disabled: boolean
 }) {
   const [input, setInput] = useState('')
@@ -62,41 +58,27 @@ export function TestConsole({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  if (collapsed) {
-    return (
-      <aside className="flex h-full w-14 flex-col items-center border-l border-border/70 bg-zinc-950/90 py-4">
-        <Button variant="ghost" size="icon-sm" onClick={onToggleCollapsed}>
-          <ChevronLeft className="size-4 rotate-180" />
-        </Button>
-        <div className="mt-4 -rotate-90 whitespace-nowrap text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          Test Console
-        </div>
-      </aside>
-    )
-  }
-
   return (
-    <aside className="flex h-full min-h-0 w-[420px] flex-col border-l border-border/70 bg-zinc-950/90">
-      <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <FlaskConical className="size-4 text-emerald-300" />
-            <h2 className="text-sm font-semibold text-zinc-50">Live Test Console</h2>
+    <section className="flex h-full min-h-0 flex-col bg-zinc-950/95">
+      <div className="border-b border-border/70 px-5 py-5 pr-14">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <FlaskConical className="size-4 text-emerald-300" />
+              <h2 className="text-sm text-zinc-50">Live Test Console</h2>
+            </div>
+            <div className="mt-2 text-sm text-muted-foreground">
+              Run the compiled assistant here and inspect inline tool traces
+              without docking a permanent side panel.
+            </div>
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            Chat with the compiled assistant and inspect inline tool traces.
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
           <Badge variant="outline" className="border-border/60 uppercase">
             {harness.status}
           </Badge>
-          <Button variant="ghost" size="icon-sm" onClick={onToggleCollapsed}>
-            <ChevronLeft className="size-4" />
-          </Button>
         </div>
       </div>
-      <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+
+      <div className="flex items-center justify-between gap-3 border-b border-border/70 px-5 py-3">
         <div className="text-xs text-muted-foreground">
           {disabled
             ? 'Add both API keys before testing.'
@@ -113,8 +95,9 @@ export function TestConsole({
           Compile & Test
         </Button>
       </div>
-      <ScrollArea className="min-h-0 flex-1 bg-zinc-950/35">
-        <div className="flex min-h-full flex-col py-2">
+
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-5 py-6">
           {messages.length ? (
             messages.map((message) => (
               <ChatMessage
@@ -122,20 +105,22 @@ export function TestConsole({
                 message={message}
                 compact
                 toolNames={toolNames}
+                assistantLabel="Assistant"
               />
             ))
           ) : (
-            <div className="m-4 rounded-2xl border border-dashed border-border/60 bg-black/20 p-4 text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-dashed border-border/60 bg-black/20 p-5 text-sm text-muted-foreground">
               Compile the current harness, then run sample prompts here to inspect
-              tool calls and responses.
+              tool calls, traces, and model responses.
             </div>
           )}
           <div ref={bottomRef} />
         </div>
       </ScrollArea>
-      <div className="space-y-3 border-t border-border/70 bg-zinc-950/85 px-4 py-4">
+
+      <div className="border-t border-border/70 bg-zinc-950/88 px-5 py-5">
         <form
-          className="space-y-3"
+          className="mx-auto w-full max-w-4xl space-y-3"
           onSubmit={async (event) => {
             event.preventDefault()
 
@@ -157,7 +142,7 @@ export function TestConsole({
                 : 'Compile the harness to enable testing.'
             }
             disabled={disabled || harness.status !== 'compiled' || status === 'streaming'}
-            className="min-h-24 bg-black/20 text-[16px] leading-7"
+            className="min-h-28 rounded-[28px] border-border/80 bg-card/70 px-5 py-4 text-[15px] leading-7 shadow-none"
           />
           <div className="flex items-center justify-between gap-3">
             <div className="text-xs text-muted-foreground">
@@ -171,6 +156,7 @@ export function TestConsole({
                 status === 'streaming' ||
                 !input.trim()
               }
+              className="rounded-2xl px-4"
             >
               <Send className="size-4" />
               Send
@@ -178,6 +164,6 @@ export function TestConsole({
           </div>
         </form>
       </div>
-    </aside>
+    </section>
   )
 }

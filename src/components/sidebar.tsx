@@ -1,14 +1,18 @@
-import { MoreHorizontal, PackagePlus, Settings2, Share2, Trash2, Upload } from 'lucide-react'
+import {
+  MoreHorizontal,
+  PackagePlus,
+  Settings2,
+  Share2,
+  Trash2,
+  Upload,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { Harness, SkillSpec } from '@shared/schema'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Collapsible,
-  CollapsibleContent,
-} from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,24 +37,34 @@ function SkillRow({
   onDelete: () => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-black/20 px-3 py-2">
+    <div className="flex items-start justify-between gap-3 rounded-xl border border-border/60 bg-black/20 px-3 py-3">
       <div className="min-w-0">
         <div className="truncate text-sm text-zinc-100">{skill.name}</div>
-        <div className="truncate text-xs text-muted-foreground">
+        <div className="mt-1 truncate text-xs text-muted-foreground">
           {skill.description || 'Generated skill'}
         </div>
       </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="border-border/60 text-[10px] uppercase">
-            {status}
-          </Badge>
-          <Button variant="ghost" size="xs" onClick={onEdit}>
-            Edit
-          </Button>
-          <Button variant="ghost" size="xs" onClick={onDelete}>
-            Del
-          </Button>
-        </div>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="border-border/60 text-[10px] uppercase">
+          {status}
+        </Badge>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="ghost" size="icon-xs" className="rounded-lg border border-border/60" />
+            }
+          >
+            <MoreHorizontal className="size-3.5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-36">
+            <DropdownMenuItem onClick={onEdit}>Edit Skill</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={onDelete}>
+              Delete Skill
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   )
 }
@@ -81,29 +95,18 @@ export function Sidebar({
   onDeleteSkill: (harness: Harness, skill: SkillSpec) => Promise<void>
 }) {
   return (
-    <aside className="flex h-full min-h-0 w-[260px] flex-col border-r border-border/70 bg-zinc-950/90">
-      <div className="space-y-3 border-b border-border/70 px-4 py-4">
-        <div>
-          <div className="text-[11px] uppercase tracking-[0.16em] text-blue-300">
-            YunForge
-          </div>
-          <div className="mt-1 text-lg font-semibold text-zinc-50">
-            Local Assistant Builder
-          </div>
+    <div className="flex h-full min-h-0 flex-col bg-zinc-950/95">
+      <div className="space-y-3 border-b border-border/70 px-4 py-5 pr-14">
+        <div className="text-[11px] uppercase tracking-[0.18em] text-blue-300">
+          Harness Library
         </div>
-        <div className="grid gap-2">
-          <Button variant="outline" className="justify-start" onClick={onOpenImport}>
-            <Upload className="size-4" />
-            Import Agent
-          </Button>
-          <Button className="justify-start" onClick={onNewHarness}>
-            <PackagePlus className="size-4" />
-            New Harness
-          </Button>
+        <div className="text-sm text-muted-foreground">
+          Switch agents, manage generated skills, and export portable snapshots.
         </div>
       </div>
+
       <ScrollArea className="min-h-0 flex-1">
-        <div className="space-y-2 p-3">
+        <div className="space-y-3 p-4">
           {harnesses.map((harness) => {
             const selected = harness.id === selectedHarnessId
 
@@ -111,30 +114,34 @@ export function Sidebar({
               <Collapsible key={harness.id} open={selected}>
                 <div
                   className={cn(
-                    'rounded-xl border transition-colors',
+                    'rounded-2xl border transition-colors',
                     selected
                       ? 'border-blue-400/30 bg-blue-500/10'
                       : 'border-border/60 bg-black/20 hover:bg-card/70',
                   )}
                 >
-                  <div className="flex items-start gap-2 px-3 py-3">
+                  <div className="flex items-start gap-3 px-3 py-3">
                     <button
                       type="button"
                       className="min-w-0 flex-1 text-left"
                       onClick={() => onSelectHarness(harness.id)}
                     >
-                      <div className="truncate text-sm font-medium text-zinc-100">
-                        {harness.name}
-                      </div>
-                      <div className="mt-1 truncate text-xs text-muted-foreground">
+                      <div className="truncate text-sm text-zinc-100">{harness.name}</div>
+                      <div className="mt-1 max-h-8 overflow-hidden text-xs text-muted-foreground">
                         {harness.spec.goal || 'No goal yet'}
                       </div>
-                      <div className="mt-2 flex items-center gap-2">
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <Badge
                           variant="outline"
                           className="border-border/60 text-[10px] uppercase"
                         >
                           {harness.status}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="border-border/60 text-[10px] uppercase"
+                        >
+                          {harness.spec.tools.length} tools
                         </Badge>
                         <span className="text-[11px] text-muted-foreground">
                           {formatTimestamp(harness.updatedAt)}
@@ -142,7 +149,15 @@ export function Sidebar({
                       </div>
                     </button>
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-black/20 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="rounded-lg border border-border/60 bg-black/20"
+                          />
+                        }
+                      >
                         <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-44">
@@ -183,7 +198,7 @@ export function Sidebar({
                           />
                         ))
                       ) : (
-                        <div className="rounded-lg border border-dashed border-border/60 px-3 py-4 text-xs text-muted-foreground">
+                        <div className="rounded-xl border border-dashed border-border/60 px-3 py-4 text-xs text-muted-foreground">
                           Generated skills will appear here.
                         </div>
                       )}
@@ -195,16 +210,21 @@ export function Sidebar({
           })}
         </div>
       </ScrollArea>
-      <div className="border-t border-border/70 p-3">
-        <Button
-          variant="outline"
-          className="w-full justify-start"
-          onClick={onOpenSettings}
-        >
+
+      <div className="grid gap-2 border-t border-border/70 p-4">
+        <Button variant="outline" className="justify-start" onClick={onOpenImport}>
+          <Upload className="size-4" />
+          Import Agent
+        </Button>
+        <Button className="justify-start" onClick={onNewHarness}>
+          <PackagePlus className="size-4" />
+          New Harness
+        </Button>
+        <Button variant="ghost" className="justify-start" onClick={onOpenSettings}>
           <Settings2 className="size-4" />
           Settings
         </Button>
       </div>
-    </aside>
+    </div>
   )
 }
